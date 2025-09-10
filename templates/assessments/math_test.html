@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Math Test{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+	<div class="col-md-8">
+		<h2 class="mb-3">Math Test</h2>
+		<p>Answer the following questions. Time limit: <span id="time">180</span> seconds.</p>
+		<form id="math-form" method="post" action="{% url 'math_test_submit' %}">
+			{% csrf_token %}
+			<ol>
+			{% for q in questions %}
+				<li class="mb-2">
+					{{ q.a }} {{ q.op }} {{ q.b }} =
+					<input type="number" name="q_{{ forloop.counter0 }}" required class="form-control d-inline-block" style="width:120px;">
+				</li>
+			{% endfor %}
+			</ol>
+			<button class="btn btn-primary" type="submit">Submit</button>
+		</form>
+	</div>
+</div>
+<script>
+(function(){
+	let seconds = 180;
+	const el = document.getElementById('time');
+	const form = document.getElementById('math-form');
+	const timer = setInterval(()=>{
+		seconds -= 1;
+		el.textContent = seconds;
+		if(seconds <= 0){
+			clearInterval(timer);
+			form.submit();
+		}
+	}, 1000);
+})();
+</script>
+{% endblock %}
