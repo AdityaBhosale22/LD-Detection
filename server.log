@@ -1,3 +1,9 @@
 [10/Sep/2025 20:47:30] "GET /accounts/login/ HTTP/1.1" 200 1564
 [10/Sep/2025 20:47:30] "GET /accounts/register/ HTTP/1.1" 200 2245
 [10/Sep/2025 20:47:30,156] - Broken pipe from ('127.0.0.1', 60924)
+[10/Sep/2025 20:48:02] "GET / HTTP/1.1" 200 17
+Not Found: /favicon.ico
+[10/Sep/2025 20:48:03] "GET /favicon.ico HTTP/1.1" 404 2516
+[10/Sep/2025 20:48:11] "GET /accounts/login/ HTTP/1.1" 200 1564
+Not Found: /assessments/intake/
+[10/Sep/2025 20:51:07] "GET /assessments/intake/ HTTP/1.1" 404 2540

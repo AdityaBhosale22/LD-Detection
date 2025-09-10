@@ -4,5 +4,6 @@
 <div class="alert alert-success">
 	Your demographic information was submitted successfully.
 </div>
-<a class="btn btn-secondary" href="/">Back to Home</a>
+<a class="btn btn-primary" href="/predictions/from-intake/{{ request.user.demographics.first.id }}/">Run Prediction</a>
+<a class="btn btn-secondary ms-2" href="/">Back to Home</a>
 {% endblock %}
