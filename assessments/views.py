@@ -5,7 +5,7 @@ from django.utils import timezone
 import random
 
 from .forms import DemographicProfileForm
-from .models import DemographicProfile, MathTestSession
+from .models import DemographicProfile, MathTestSession, GrammarTestSession
 
 
 @login_required
@@ -84,5 +84,66 @@ def math_test_submit(request):
 def math_test_result(request, session_id: int):
 	session = MathTestSession.objects.get(id=session_id, user=request.user)
 	return render(request, "assessments/math_test_result.html", {"session": session})
+
+
+@login_required
+def grammar_test_start(request):
+	# Five MCQ grammar items
+	bank = [
+		{"prompt": "Choose the correct form: She __ to school every day.", "options": ["go", "goes", "going"], "answer": "goes"},
+		{"prompt": "Fill the blank: They ___ playing.", "options": ["is", "are", "am"], "answer": "are"},
+		{"prompt": "Correct article: He is ___ honest man.", "options": ["a", "an", "the"], "answer": "an"},
+		{"prompt": "Verb tense: I ___ dinner when you called.", "options": ["cook", "was cooking", "cooks"], "answer": "was cooking"},
+		{"prompt": "Plural form: One child, two ___.", "options": ["childs", "children", "childes"], "answer": "children"},
+	]
+	random.shuffle(bank)
+	items = bank[:5]
+	session = GrammarTestSession.objects.create(user=request.user, num_total=len(items))
+	request.session["grammar_test_id"] = session.id
+	request.session["grammar_items"] = items
+	request.session["grammar_start_ts"] = timezone.now().timestamp()
+	return render(request, "assessments/grammar_test.html", {"items": items, "session": session})
+
+
+@login_required
+def grammar_test_submit(request):
+	if request.method != "POST":
+		return redirect("grammar_test_start")
+	session_id = request.session.get("grammar_test_id")
+	items = request.session.get("grammar_items", [])
+	start_ts = request.session.get("grammar_start_ts")
+	if not session_id or not items or not start_ts:
+		return redirect("grammar_test_start")
+	session = GrammarTestSession.objects.get(id=session_id, user=request.user)
+	correct = 0
+	details = []
+	for idx, item in enumerate(items):
+		key = f"q_{idx}"
+		user_val = request.POST.get(key)
+		is_correct = user_val == item["answer"]
+		if is_correct:
+			correct += 1
+		details.append({
+			"prompt": item["prompt"],
+			"options": item["options"],
+			"answer": item["answer"],
+			"user": user_val,
+			"correct": is_correct,
+		})
+	duration = int(max(0, timezone.now().timestamp() - start_ts))
+	session.num_correct = correct
+	session.duration_seconds = duration
+	session.details = details
+	session.ended_at = timezone.now()
+	session.save()
+	for k in ["grammar_test_id", "grammar_items", "grammar_start_ts"]:
+		request.session.pop(k, None)
+	return redirect("grammar_test_result", session_id=session.id)
+
+
+@login_required
+def grammar_test_result(request, session_id: int):
+	session = GrammarTestSession.objects.get(id=session_id, user=request.user)
+	return render(request, "assessments/grammar_test_result.html", {"session": session})
 
 

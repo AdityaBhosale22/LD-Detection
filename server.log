@@ -7,3 +7,82 @@ Not Found: /favicon.ico
 [10/Sep/2025 20:48:11] "GET /accounts/login/ HTTP/1.1" 200 1564
 Not Found: /assessments/intake/
 [10/Sep/2025 20:51:07] "GET /assessments/intake/ HTTP/1.1" 404 2540
+[10/Sep/2025 21:02:32] "GET /accounts/register/ HTTP/1.1" 200 2245
+Internal Server Error: /accounts/register/
+Traceback (most recent call last):
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 360, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such table: accounts_useraccount
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "D:\Coding Practice\LD Detection\accounts\views.py", line 13, in register
+    if form.is_valid():
+       ~~~~~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\forms\forms.py", line 206, in is_valid
+    return self.is_bound and not self.errors
+                                 ^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\forms\forms.py", line 201, in errors
+    self.full_clean()
+    ~~~~~~~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\forms\forms.py", line 339, in full_clean
+    self._post_clean()
+    ~~~~~~~~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\forms\models.py", line 504, in _post_clean
+    self.validate_unique()
+    ~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\forms\models.py", line 513, in validate_unique
+    self.instance.validate_unique(exclude=exclude)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\base.py", line 1401, in validate_unique
+    errors = self._perform_unique_checks(unique_checks)
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\base.py", line 1516, in _perform_unique_checks
+    if qs.exists():
+       ~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\query.py", line 1296, in exists
+    return self.query.has_results(using=self.db)
+           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\sql\query.py", line 674, in has_results
+    return compiler.has_results()
+           ~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1591, in has_results
+    return bool(self.execute_sql(SINGLE))
+                ~~~~~~~~~~~~~~~~^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\models\sql\compiler.py", line 1623, in execute_sql
+    cursor.execute(sql, params)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 122, in execute
+    return super().execute(sql, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 79, in execute
+    return self._execute_with_wrappers(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        sql, params, many=False, executor=self._execute
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 92, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 100, in _execute
+    with self.db.wrap_database_errors:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\utils.py", line 105, in _execute
+    return self.cursor.execute(sql, params)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^
+  File "D:\Coding Practice\LD Detection\.venv\Lib\site-packages\django\db\backends\sqlite3\base.py", line 360, in execute
+    return super().execute(query, params)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: no such table: accounts_useraccount
+[10/Sep/2025 21:02:56] "POST /accounts/register/ HTTP/1.1" 500 160918
+[10/Sep/2025 21:03:01] "GET /accounts/login/ HTTP/1.1" 200 1564

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Grammar Test{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+	<div class="col-md-8">
+		<h2 class="mb-3">Grammar Test</h2>
+		<form method="post" action="{% url 'grammar_test_submit' %}">
+			{% csrf_token %}
+			<ol>
+			{% for item in items %}
+				<li class="mb-3">
+					<p>{{ item.prompt }}</p>
+					{% for opt in item.options %}
+					<div class="form-check">
+						<input class="form-check-input" type="radio" name="q_{{ forloop.parentloop.counter0 }}" id="q{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}" value="{{ opt }}" required>
+						<label class="form-check-label" for="q{{ forloop.parentloop.counter0 }}_{{ forloop.counter0 }}">{{ opt }}</label>
+					</div>
+					{% endfor %}
+				</li>
+			{% endfor %}
+			</ol>
+			<button class="btn btn-primary" type="submit">Submit</button>
+		</form>
+	</div>
+</div>
+{% endblock %}

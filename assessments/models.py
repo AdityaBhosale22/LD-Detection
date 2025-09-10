@@ -48,3 +48,20 @@ class MathTestSession(models.Model):
 		return f"MathTest(user={self.user_id}, {self.num_correct}/{self.num_total})"
 
 
+class GrammarTestSession(models.Model):
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="grammar_tests")
+	started_at = models.DateTimeField(auto_now_add=True)
+	ended_at = models.DateTimeField(null=True, blank=True)
+	num_correct = models.PositiveIntegerField(default=0)
+	num_total = models.PositiveIntegerField(default=0)
+	duration_seconds = models.PositiveIntegerField(default=0)
+	# details: [{"prompt": str, "options": [str,...], "answer": str, "user": str, "correct": bool}]
+	details = models.JSONField(default=list, blank=True)
+
+	class Meta:
+		ordering = ["-started_at"]
+
+	def __str__(self) -> str:
+		return f"GrammarTest(user={self.user_id}, {self.num_correct}/{self.num_total})"
+
+
