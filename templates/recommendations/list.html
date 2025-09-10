@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Recommendations{% endblock %}
+{% block content %}
+<h3>Personalized Recommendations</h3>
+<p>Based on your recent test performance, here are suggested resources:</p>
+<div class="list-group">
+	{% for r in recs %}
+	<a class="list-group-item list-group-item-action" href="{{ r.url }}" target="_blank">
+		<div class="d-flex w-100 justify-content-between">
+			<h5 class="mb-1">[{{ r.area|title }}] {{ r.title }}</h5>
+			<small>Weakness score: {{ r.score|floatformat:2 }}</small>
+		</div>
+		<p class="mb-1">{{ r.description }}</p>
+	</a>
+	{% empty %}
+	<div class="alert alert-success">Great job! No recommendations needed right now.</div>
+	{% endfor %}
+</div>
+{% endblock %}
+
+
