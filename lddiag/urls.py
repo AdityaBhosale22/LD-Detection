@@ -4,13 +4,14 @@ from django.http import HttpResponse
 
 
 def home(_request):
-	return HttpResponse("LD Detection Home")
+	return HttpResponse('<a href="/accounts/login/">Login</a> | <a href="/accounts/register/">Register</a> | <a href="/assessments/intake/">LD Intake</a>')
 
 
 urlpatterns = [
 	path("", home, name="home"),
 	path("admin/", admin.site.urls),
 	path("accounts/", include("accounts.urls")),
+	path("assessments/", include("assessments.urls")),
 ]
 
 
