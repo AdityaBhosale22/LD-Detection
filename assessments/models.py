@@ -83,3 +83,37 @@ class ReadingTestSession(models.Model):
 		return f"ReadingTest(user={self.user_id}, wpm={self.wpm:.1f}, acc={self.accuracy:.2f})"
 
 
+class MemoryTestSession(models.Model):
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="memory_tests")
+	started_at = models.DateTimeField(auto_now_add=True)
+	ended_at = models.DateTimeField(null=True, blank=True)
+	sequence = models.JSONField(default=list, blank=True)  # list of ints shown
+	response = models.JSONField(default=list, blank=True)  # list of ints entered
+	num_correct = models.PositiveIntegerField(default=0)
+	num_total = models.PositiveIntegerField(default=0)
+	duration_seconds = models.PositiveIntegerField(default=0)
+
+	class Meta:
+		ordering = ["-started_at"]
+
+	def __str__(self) -> str:
+		return f"MemoryTest(user={self.user_id}, {self.num_correct}/{self.num_total})"
+
+
+class ScenarioTestSession(models.Model):
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="scenario_tests")
+	started_at = models.DateTimeField(auto_now_add=True)
+	ended_at = models.DateTimeField(null=True, blank=True)
+	scenario_text = models.TextField()
+	num_correct = models.PositiveIntegerField(default=0)
+	num_total = models.PositiveIntegerField(default=0)
+	duration_seconds = models.PositiveIntegerField(default=0)
+	details = models.JSONField(default=list, blank=True)
+
+	class Meta:
+		ordering = ["-started_at"]
+
+	def __str__(self) -> str:
+		return f"ScenarioTest(user={self.user_id}, {self.num_correct}/{self.num_total})"
+
+

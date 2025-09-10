@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Memory Result{% endblock %}
+{% block content %}
+<h3>Memory Test Result</h3>
+<p><strong>Score:</strong> {{ session.num_correct }} / {{ session.num_total }}</p>
+<p><strong>Time:</strong> {{ session.duration_seconds }} seconds</p>
+<table class="table table-sm">
+	<thead><tr><th>#</th><th>Target</th><th>Your</th><th>Correct?</th></tr></thead>
+	<tbody>
+		{% for target, user in pairs %}
+		<tr>
+			<td>{{ forloop.counter }}</td>
+			<td>{{ target }}</td>
+			<td>{{ user }}</td>
+			<td>{% if target == user %}✅{% else %}❌{% endif %}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
+<a class="btn btn-secondary" href="{% url 'memory_test_start' %}">Try Again</a>
+<a class="btn btn-primary ms-2" href="/">Home</a>
+{% endblock %}
+
+

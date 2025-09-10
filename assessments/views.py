@@ -6,7 +6,14 @@ import random
 import math
 
 from .forms import DemographicProfileForm
-from .models import DemographicProfile, MathTestSession, GrammarTestSession, ReadingTestSession
+from .models import (
+	DemographicProfile,
+	MathTestSession,
+	GrammarTestSession,
+	ReadingTestSession,
+	MemoryTestSession,
+	ScenarioTestSession,
+)
 
 
 @login_required
@@ -204,5 +211,111 @@ def reading_test_submit(request):
 def reading_test_result(request, session_id: int):
 	session = ReadingTestSession.objects.get(id=session_id, user=request.user)
 	return render(request, "assessments/reading_test_result.html", {"session": session})
+
+
+# Memory test: show sequence then collect recall
+@login_required
+def memory_test_start(request):
+	# Generate a sequence of 6 numbers 0..9
+	seq = [random.randint(0,9) for _ in range(6)]
+	session = MemoryTestSession.objects.create(user=request.user, sequence=seq, num_total=len(seq))
+	request.session["memory_test_id"] = session.id
+	request.session["memory_start_ts"] = timezone.now().timestamp()
+	return render(request, "assessments/memory_test.html", {"sequence": seq, "session": session})
+
+
+@login_required
+def memory_test_submit(request):
+	if request.method != "POST":
+		return redirect("memory_test_start")
+	session_id = request.session.get("memory_test_id")
+	start_ts = request.session.get("memory_start_ts")
+	if not session_id or not start_ts:
+		return redirect("memory_test_start")
+	session = MemoryTestSession.objects.get(id=session_id, user=request.user)
+	resp_raw = request.POST.get("response", "").strip()
+	resp = [int(x) for x in resp_raw.split() if x.isdigit()]
+	correct = sum(1 for a,b in zip(session.sequence, resp) if a==b)
+	duration = int(max(0, timezone.now().timestamp() - start_ts))
+	session.response = resp
+	session.num_correct = correct
+	session.duration_seconds = duration
+	session.ended_at = timezone.now()
+	session.save()
+	for k in ["memory_test_id", "memory_start_ts"]:
+		request.session.pop(k, None)
+	return redirect("memory_test_result", session_id=session.id)
+
+
+@login_required
+def memory_test_result(request, session_id: int):
+	session = MemoryTestSession.objects.get(id=session_id, user=request.user)
+	pairs = list(zip(session.sequence, session.response))
+	return render(request, "assessments/memory_test_result.html", {"session": session, "pairs": pairs})
+
+
+# Scenario-based test: short passage with questions
+_SCENARIOS = [
+	{
+		"text": "Riya forgot her homework again. The teacher asked her why, and she said her little brother was sick and she had to help. The teacher gave her an extra day.",
+		"qa": [
+			{"q": "Why did Riya forget her homework?", "options": ["She played games", "Brother was sick", "She lost it"], "a": "Brother was sick"},
+			{"q": "What did the teacher do?", "options": ["Punished her", "Gave extra day", "Ignored it"], "a": "Gave extra day"},
+		]
+	},
+	{
+		"text": "Aman saw a puppy stuck behind a fence. He called a neighbor for help. Together they opened the gate and the puppy ran to its mother.",
+		"qa": [
+			{"q": "What problem did Aman see?", "options": ["Puppy stuck", "Cat on tree", "Lost toy"], "a": "Puppy stuck"},
+			{"q": "Who helped Aman?", "options": ["His teacher", "A neighbor", "A police officer"], "a": "A neighbor"},
+		]
+	},
+]
+
+
+@login_required
+def scenario_test_start(request):
+	s = random.choice(_SCENARIOS)
+	session = ScenarioTestSession.objects.create(user=request.user, scenario_text=s["text"], num_total=len(s["qa"]))
+	request.session["scenario_test_id"] = session.id
+	request.session["scenario_start_ts"] = timezone.now().timestamp()
+	request.session["scenario_items"] = s["qa"]
+	return render(request, "assessments/scenario_test.html", {"text": s["text"], "items": s["qa"], "session": session})
+
+
+@login_required
+def scenario_test_submit(request):
+	if request.method != "POST":
+		return redirect("scenario_test_start")
+	session_id = request.session.get("scenario_test_id")
+	start_ts = request.session.get("scenario_start_ts")
+	items = request.session.get("scenario_items", [])
+	if not session_id or not start_ts or not items:
+		return redirect("scenario_test_start")
+	session = ScenarioTestSession.objects.get(id=session_id, user=request.user)
+	correct = 0
+	details = []
+	for idx, item in enumerate(items):
+		key = f"q_{idx}"
+		user_val = request.POST.get(key)
+		is_correct = user_val == item["a"]
+		if is_correct:
+			correct += 1
+		details.append({"q": item["q"], "options": item["options"], "a": item["a"], "user": user_val, "correct": is_correct})
+	duration = int(max(0, timezone.now().timestamp() - start_ts))
+	session.num_correct = correct
+	session.duration_seconds = duration
+	session.details = details
+	session.ended_at = timezone.now()
+	session.save()
+	for k in ["scenario_test_id", "scenario_start_ts", "scenario_items"]:
+		request.session.pop(k, None)
+	return redirect("scenario_test_result", session_id=session.id)
+
+
+@login_required
+def scenario_test_result(request, session_id: int):
+	session = ScenarioTestSession.objects.get(id=session_id, user=request.user)
+	return render(request, "assessments/scenario_test_result.html", {"session": session})
 
 
