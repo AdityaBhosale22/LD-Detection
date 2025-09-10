@@ -65,3 +65,21 @@ class GrammarTestSession(models.Model):
 		return f"GrammarTest(user={self.user_id}, {self.num_correct}/{self.num_total})"
 
 
+class ReadingTestSession(models.Model):
+	user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reading_tests")
+	started_at = models.DateTimeField(auto_now_add=True)
+	ended_at = models.DateTimeField(null=True, blank=True)
+	passage = models.TextField()
+	transcript = models.TextField(blank=True)
+	duration_seconds = models.PositiveIntegerField(default=0)
+	wpm = models.FloatField(default=0.0)
+	accuracy = models.FloatField(default=0.0)  # 0..1 token overlap
+	details = models.JSONField(default=dict, blank=True)
+
+	class Meta:
+		ordering = ["-started_at"]
+
+	def __str__(self) -> str:
+		return f"ReadingTest(user={self.user_id}, wpm={self.wpm:.1f}, acc={self.accuracy:.2f})"
+
+

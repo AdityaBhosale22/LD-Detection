@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Reading Result{% endblock %}
+{% block content %}
+<h3>Reading Test Result</h3>
+<p><strong>WPM:</strong> {{ session.wpm }}</p>
+<p><strong>Accuracy:</strong> {{ session.accuracy|floatformat:2 }}</p>
+<p><strong>Time:</strong> {{ session.duration_seconds }} seconds</p>
+<div class="mb-2"><strong>Original passage:</strong><br>{{ session.passage }}</div>
+<div><strong>Your transcript:</strong><br>{{ session.transcript }}</div>
+<a class="btn btn-secondary mt-3" href="{% url 'reading_test_start' %}">Try Again</a>
+<a class="btn btn-primary ms-2 mt-3" href="/">Home</a>
+{% endblock %}
+
+

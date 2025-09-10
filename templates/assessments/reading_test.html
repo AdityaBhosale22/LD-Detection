@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Reading Test{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+	<div class="col-md-8">
+		<h2 class="mb-3">Reading Test</h2>
+		<p>Read this passage aloud. Click Start, then Stop when done.</p>
+		<blockquote class="blockquote p-3 bg-light">{{ passage }}</blockquote>
+		<form id="reading-form" method="post" action="{% url 'reading_test_submit' %}">
+			{% csrf_token %}
+			<input type="hidden" id="transcript" name="transcript" />
+			<div class="mb-2">
+				<button class="btn btn-success" type="button" id="btnStart">Start</button>
+				<button class="btn btn-danger" type="button" id="btnStop" disabled>Stop</button>
+			</div>
+			<div class="mb-3">
+				<label class="form-label">Captured Transcript</label>
+				<textarea id="display" class="form-control" rows="6" readonly></textarea>
+			</div>
+			<button class="btn btn-primary" type="submit">Submit Transcript</button>
+		</form>
+	</div>
+</div>
+<script>
+(function(){
+	const startBtn = document.getElementById('btnStart');
+	const stopBtn = document.getElementById('btnStop');
+	const display = document.getElementById('display');
+	const hidden = document.getElementById('transcript');
+	let rec;
+	let listening = false;
+	function init(){
+		const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+		if(!SR){
+			alert('Speech Recognition not supported in this browser. Please use Chrome.');
+			startBtn.disabled = true;
+			stopBtn.disabled = true;
+			return;
+		}
+		rec = new SR();
+		rec.continuous = true;
+		rec.interimResults = true;
+		rec.lang = 'en-US';
+		rec.onresult = (e)=>{
+			let out = '';
+			for(let i=0;i<e.results.length;i++){
+				out += e.results[i][0].transcript;
+			}
+			display.value = out;
+			hidden.value = out;
+		};
+		rec.onend = ()=>{ listening=false; startBtn.disabled=false; stopBtn.disabled=true; };
+	}
+	startBtn.addEventListener('click', ()=>{ if(rec){ rec.start(); listening=true; startBtn.disabled=true; stopBtn.disabled=false; }});
+	stopBtn.addEventListener('click', ()=>{ if(rec && listening){ rec.stop(); }});
+	init();
+})();
+</script>
+{% endblock %}

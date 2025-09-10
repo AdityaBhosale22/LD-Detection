@@ -3,9 +3,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 import random
+import math
 
 from .forms import DemographicProfileForm
-from .models import DemographicProfile, MathTestSession, GrammarTestSession
+from .models import DemographicProfile, MathTestSession, GrammarTestSession, ReadingTestSession
 
 
 @login_required
@@ -145,5 +146,63 @@ def grammar_test_submit(request):
 def grammar_test_result(request, session_id: int):
 	session = GrammarTestSession.objects.get(id=session_id, user=request.user)
 	return render(request, "assessments/grammar_test_result.html", {"session": session})
+
+
+# Reading test
+_PASSAGES = [
+	"The quick brown fox jumps over the lazy dog.",
+	"Reading fluently helps you understand and learn new ideas faster.",
+	"Students should practice every day to improve their skills.",
+]
+
+
+def _tokenize(text: str):
+	return [t for t in ''.join(c.lower() if c.isalnum() or c.isspace() else ' ' for c in text).split() if t]
+
+
+@login_required
+def reading_test_start(request):
+	passage = random.choice(_PASSAGES)
+	session = ReadingTestSession.objects.create(user=request.user, passage=passage)
+	request.session["reading_test_id"] = session.id
+	request.session["reading_start_ts"] = timezone.now().timestamp()
+	return render(request, "assessments/reading_test.html", {"session": session, "passage": passage})
+
+
+@login_required
+def reading_test_submit(request):
+	if request.method != "POST":
+		return redirect("reading_test_start")
+	session_id = request.session.get("reading_test_id")
+	start_ts = request.session.get("reading_start_ts")
+	if not session_id or not start_ts:
+		return redirect("reading_test_start")
+	session = ReadingTestSession.objects.get(id=session_id, user=request.user)
+	transcript = request.POST.get("transcript", "").strip()
+	duration = int(max(0, timezone.now().timestamp() - start_ts))
+	# Compute WPM and accuracy
+	ref_tokens = _tokenize(session.passage)
+	hyp_tokens = _tokenize(transcript)
+	wpm = (len(hyp_tokens) / (duration / 60.0)) if duration > 0 else 0.0
+	# simple overlap accuracy
+	ref_set = set(ref_tokens)
+	overlap = sum(1 for t in hyp_tokens if t in ref_set)
+	accuracy = (overlap / max(1, len(ref_tokens)))
+	session.transcript = transcript
+	session.duration_seconds = duration
+	session.wpm = float(f"{wpm:.2f}")
+	session.accuracy = float(f"{accuracy:.2f}")
+	session.details = {"ref_len": len(ref_tokens), "hyp_len": len(hyp_tokens), "overlap": overlap}
+	session.ended_at = timezone.now()
+	session.save()
+	for k in ["reading_test_id", "reading_start_ts"]:
+		request.session.pop(k, None)
+	return redirect("reading_test_result", session_id=session.id)
+
+
+@login_required
+def reading_test_result(request, session_id: int):
+	session = ReadingTestSession.objects.get(id=session_id, user=request.user)
+	return render(request, "assessments/reading_test_result.html", {"session": session})
 
 

@@ -8,6 +8,9 @@ from .views import (
 	grammar_test_start,
 	grammar_test_submit,
 	grammar_test_result,
+	reading_test_start,
+	reading_test_submit,
+	reading_test_result,
 )
 
 
@@ -20,6 +23,9 @@ urlpatterns = [
 	path("grammar/start/", grammar_test_start, name="grammar_test_start"),
 	path("grammar/submit/", grammar_test_submit, name="grammar_test_submit"),
 	path("grammar/result/<int:session_id>/", grammar_test_result, name="grammar_test_result"),
+	path("reading/start/", reading_test_start, name="reading_test_start"),
+	path("reading/submit/", reading_test_submit, name="reading_test_submit"),
+	path("reading/result/<int:session_id>/", reading_test_result, name="reading_test_result"),
 ]
 
 
