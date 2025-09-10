@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+<div class="p-4 mb-4 bg-white rounded-3 shadow-sm">
+	<h1 class="display-6">Welcome to LD Detection</h1>
+	<p class="lead">Screen, assess, and support students with personalized recommendations.</p>
+	<div class="d-flex gap-2">
+		<a class="btn btn-primary" href="/assessments/intake/">Start Intake</a>
+		<a class="btn btn-outline-primary" href="/recommendations/">View Recommendations</a>
+		<a class="btn btn-outline-secondary" href="/reports/dashboard/">Analytics</a>
+	</div>
+</div>
+
+<div class="row g-3">
+	<div class="col-md-4">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Tests</h5>
+				<p class="card-text">Math, Grammar, Reading (speech), Memory, and Scenario-based assessments.</p>
+				<a class="btn btn-sm btn-outline-primary" href="/assessments/math/start/">Take Math Test</a>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Predictions</h5>
+				<p class="card-text">Run ML predictions and generate final reports with next steps.</p>
+				<a class="btn btn-sm btn-outline-secondary" href="/reports/download/">Download Report</a>
+			</div>
+		</div>
+	</div>
+	<div class="col-md-4">
+		<div class="card h-100">
+			<div class="card-body">
+				<h5 class="card-title">Resources</h5>
+				<p class="card-text">Personalized learning materials aligned to weak areas.</p>
+				<a class="btn btn-sm btn-outline-success" href="/recommendations/">Browse Resources</a>
+			</div>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+
