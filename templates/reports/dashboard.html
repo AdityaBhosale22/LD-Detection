@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Analytics Dashboard{% endblock %}
+{% block content %}
+<h3>Analytics Dashboard</h3>
+<p>Weakness scores per area (0 = strong, 1 = weak). Higher bars suggest more practice needed.</p>
+{% if img_data_uri %}
+<img src="{{ img_data_uri }}" alt="Area weakness chart" class="img-fluid"/>
+{% else %}
+<div class="alert alert-info">No data available yet. Take some tests to see analytics.</div>
+{% endif %}
+<a class="btn btn-secondary mt-3" href="/">Home</a>
+{% endblock %}
+
+

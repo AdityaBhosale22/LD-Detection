@@ -3,6 +3,7 @@ from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
+from django.shortcuts import render
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -19,6 +20,12 @@ from assessments.models import (
 )
 from predictions.models import PredictionResult
 from recommendations.models import Recommendation
+from recommendations.services import compute_user_area_scores
+
+# Matplotlib (non-interactive backend)
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 
 
 @login_required
@@ -110,6 +117,26 @@ def download_report(request):
 		lambda s: [[i+1, d.get("q"), d.get("user"), d.get("a"), "Yes" if d.get("correct") else "No"] for i,d in enumerate(s.details[:10])]
 	)
 
+	# Analytics chart (area weaknesses)
+	areas = compute_user_area_scores(request.user)
+	if areas:
+		# Create bar chart into buffer
+		labels = [a.area.title() for a in areas]
+		values = [a.score for a in areas]
+		fig, ax = plt.subplots(figsize=(6, 3))
+		ax.bar(labels, values, color="#4e79a7")
+		ax.set_ylim(0, 1)
+		ax.set_ylabel("Weakness (0..1)")
+		ax.set_title("Area Weakness Scores")
+		img_buf = BytesIO()
+		plt.tight_layout()
+		fig.savefig(img_buf, format="PNG")
+		plt.close(fig)
+		img_buf.seek(0)
+		from reportlab.platypus import Image as RLImage
+		story.append(RLImage(img_buf, width=400, height=200))
+		story.append(Spacer(1, 12))
+
 	# Recommendations
 	story.append(Paragraph("Recommendations", styles["Heading3"]))
 	recs = Recommendation.objects.filter(user=request.user).order_by("-score")[:10]
@@ -127,5 +154,28 @@ def download_report(request):
 	resp = HttpResponse(pdf, content_type="application/pdf")
 	resp["Content-Disposition"] = "attachment; filename=ld_report.pdf"
 	return resp
+
+
+@login_required
+def analytics_dashboard(request):
+	areas = compute_user_area_scores(request.user)
+	labels = [a.area.title() for a in areas]
+	values = [a.score for a in areas]
+	img_data_uri = None
+	if areas:
+		fig, ax = plt.subplots(figsize=(6, 3))
+		ax.bar(labels, values, color="#f28e2b")
+		ax.set_ylim(0, 1)
+		ax.set_ylabel("Weakness (0..1)")
+		ax.set_title("Area Weakness Scores")
+		buf = BytesIO()
+		plt.tight_layout()
+		fig.savefig(buf, format="png")
+		plt.close(fig)
+		buf.seek(0)
+		import base64
+		img_b64 = base64.b64encode(buf.read()).decode("ascii")
+		img_data_uri = f"data:image/png;base64,{img_b64}"
+	return render(request, "reports/dashboard.html", {"labels": labels, "values": values, "img_data_uri": img_data_uri})
 
 
