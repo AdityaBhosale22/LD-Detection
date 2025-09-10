@@ -22,6 +22,7 @@ INSTALLED_APPS = [
 	"assessments",
 	"predictions",
 	"recommendations",
+	"reports",
 ]
 
 MIDDLEWARE = [
