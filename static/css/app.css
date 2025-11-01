@@ -1,5 +1,338 @@
-body { background-color: #f8fafc; }
-.navbar-brand { letter-spacing: 0.5px; }
-.blockquote { border-left: 4px solid #e9ecef; }
-table.table-sm td, table.table-sm th { vertical-align: middle; }
+/* Modern Professional Design System */
+:root {
+	--primary-blue: #2563eb;
+	--primary-blue-dark: #1e40af;
+	--primary-blue-light: #3b82f6;
+	--gray-bg: #f8fafc;
+	--gray-light: #f1f5f9;
+	--gray-border: #e2e8f0;
+	--text-primary: #1e293b;
+	--text-secondary: #64748b;
+	--success: #10b981;
+	--danger: #ef4444;
+	--shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	--shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+	--radius: 0.5rem;
+	--radius-lg: 0.75rem;
+}
 
+* {
+	box-sizing: border-box;
+}
+
+body {
+	background-color: var(--gray-bg);
+	color: var(--text-primary);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+	line-height: 1.6;
+}
+
+/* Navbar */
+.navbar {
+	background: white !important;
+	box-shadow: var(--shadow-sm);
+}
+
+.navbar-brand {
+	font-weight: 700;
+	font-size: 1.25rem;
+	color: var(--primary-blue) !important;
+	letter-spacing: 0.5px;
+}
+
+/* Cards */
+.card {
+	border: none;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-md);
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+	transform: translateY(-2px);
+	box-shadow: var(--shadow-lg);
+}
+
+.card-body {
+	padding: 1.5rem;
+}
+
+.card-title {
+	font-size: 1.25rem;
+	font-weight: 600;
+	color: var(--text-primary);
+	margin-bottom: 0.75rem;
+}
+
+.card-text {
+	color: var(--text-secondary);
+	margin-bottom: 1rem;
+}
+
+/* Buttons */
+.btn {
+	border-radius: var(--radius);
+	font-weight: 500;
+	padding: 0.5rem 1.25rem;
+	transition: all 0.2s;
+}
+
+.btn-primary {
+	background-color: var(--primary-blue);
+	border-color: var(--primary-blue);
+}
+
+.btn-primary:hover {
+	background-color: var(--primary-blue-dark);
+	border-color: var(--primary-blue-dark);
+	transform: translateY(-1px);
+	box-shadow: var(--shadow-md);
+}
+
+.btn-outline-primary {
+	color: var(--primary-blue);
+	border-color: var(--primary-blue);
+}
+
+.btn-outline-primary:hover {
+	background-color: var(--primary-blue);
+	border-color: var(--primary-blue);
+	color: white;
+}
+
+.btn-outline-secondary {
+	border-color: var(--gray-border);
+	color: var(--text-secondary);
+}
+
+.btn-outline-secondary:hover {
+	background-color: var(--text-secondary);
+	border-color: var(--text-secondary);
+	color: white;
+}
+
+.btn-success {
+	background-color: var(--success);
+	border-color: var(--success);
+}
+
+.btn-danger {
+	background-color: var(--danger);
+	border-color: var(--danger);
+}
+
+/* Forms */
+.form-control, .form-select {
+	border-radius: var(--radius);
+	border-color: var(--gray-border);
+	padding: 0.5rem 0.75rem;
+	transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus, .form-select:focus {
+	border-color: var(--primary-blue-light);
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.form-label {
+	font-weight: 500;
+	color: var(--text-primary);
+	margin-bottom: 0.5rem;
+}
+
+.form-check-input {
+	border-radius: 0.25rem;
+}
+
+.form-check-input:checked {
+	background-color: var(--primary-blue);
+	border-color: var(--primary-blue);
+}
+
+.form-check-label {
+	color: var(--text-primary);
+}
+
+/* Alerts */
+.alert {
+	border-radius: var(--radius);
+	border: none;
+}
+
+.alert-info {
+	background-color: #dbeafe;
+	color: #1e40af;
+}
+
+.alert-success {
+	background-color: #d1fae5;
+	color: #065f46;
+}
+
+.alert-danger {
+	background-color: #fee2e2;
+	color: #991b1b;
+}
+
+/* Tables */
+.table {
+	background-color: white;
+	border-radius: var(--radius);
+	overflow: hidden;
+}
+
+.table thead {
+	background-color: var(--gray-light);
+}
+
+.table th {
+	font-weight: 600;
+	color: var(--text-primary);
+	border-color: var(--gray-border);
+}
+
+.table td {
+	border-color: var(--gray-border);
+	vertical-align: middle;
+}
+
+.table tbody tr:hover {
+	background-color: var(--gray-bg);
+}
+
+/* Hero Section */
+.hero {
+	background: white;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-md);
+	padding: 2.5rem;
+	margin-bottom: 2rem;
+}
+
+.hero h1 {
+	font-size: 2rem;
+	font-weight: 700;
+	color: var(--text-primary);
+	margin-bottom: 1rem;
+}
+
+.hero .lead {
+	font-size: 1.125rem;
+	color: var(--text-secondary);
+	margin-bottom: 1.5rem;
+}
+
+/* Section Titles */
+h2, h3, h4 {
+	font-weight: 600;
+	color: var(--text-primary);
+}
+
+h2 {
+	font-size: 1.75rem;
+	margin-bottom: 1.5rem;
+}
+
+h3 {
+	font-size: 1.5rem;
+	margin-bottom: 1.25rem;
+}
+
+/* Blockquotes */
+.blockquote {
+	border-left: 4px solid var(--primary-blue);
+	padding: 1rem 1.5rem;
+	background-color: var(--gray-light);
+	border-radius: var(--radius);
+	font-size: 1rem;
+}
+
+/* Test Timer */
+.timer-display {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: var(--primary-blue);
+	padding: 0.75rem 1.5rem;
+	background-color: var(--gray-light);
+	border-radius: var(--radius);
+	display: inline-block;
+	margin-bottom: 1.5rem;
+}
+
+/* Test Question Layout */
+.test-question {
+	background-color: white;
+	padding: 1.5rem;
+	border-radius: var(--radius);
+	border: 1px solid var(--gray-border);
+	margin-bottom: 1.5rem;
+	transition: border-color 0.2s;
+}
+
+.test-question:hover {
+	border-color: var(--primary-blue-light);
+}
+
+.test-question-number {
+	font-weight: 600;
+	color: var(--primary-blue);
+	margin-bottom: 0.75rem;
+}
+
+.test-input-group {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+/* Footer */
+footer {
+	margin-top: 4rem;
+	padding: 2rem 0;
+	text-align: center;
+	color: var(--text-secondary);
+	border-top: 1px solid var(--gray-border);
+}
+
+/* Results Page */
+.result-card {
+	background-color: white;
+	border-radius: var(--radius-lg);
+	box-shadow: var(--shadow-md);
+	padding: 2rem;
+	margin-bottom: 2rem;
+}
+
+.result-score {
+	font-size: 2.5rem;
+	font-weight: 700;
+	color: var(--primary-blue);
+}
+
+.result-label {
+	font-size: 1rem;
+	color: var(--text-secondary);
+	text-transform: uppercase;
+	letter-spacing: 1px;
+}
+
+/* Utilities */
+.gap-3 { gap: 1rem !important; }
+.gap-4 { gap: 1.5rem !important; }
+.rounded-lg { border-radius: var(--radius-lg) !important; }
+
+/* Responsive */
+@media (max-width: 768px) {
+	.hero {
+		padding: 1.5rem;
+	}
+	
+	.hero h1 {
+		font-size: 1.5rem;
+	}
+	
+	.card-body {
+		padding: 1rem;
+	}
+}

@@ -2,21 +2,31 @@
 {% block title %}Math Test{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
-	<div class="col-md-8">
-		<h2 class="mb-3">Math Test</h2>
-		<p>Answer the following questions. Time limit: <span id="time">180</span> seconds.</p>
-		<form id="math-form" method="post" action="{% url 'math_test_submit' %}">
-			{% csrf_token %}
-			<ol>
-			{% for q in questions %}
-				<li class="mb-2">
-					{{ q.a }} {{ q.op }} {{ q.b }} =
-					<input type="number" name="q_{{ forloop.counter0 }}" required class="form-control d-inline-block" style="width:120px;">
-				</li>
-			{% endfor %}
-			</ol>
-			<button class="btn btn-primary" type="submit">Submit</button>
-		</form>
+	<div class="col-md-7">
+		<div class="card">
+			<div class="card-body">
+				<h2 class="mb-4">Math Test</h2>
+				<div class="timer-display text-center">
+					⏱️ Time Remaining: <span id="time">180</span> seconds
+				</div>
+				<p class="text-muted mb-4">Answer all questions. The test will auto-submit when time runs out.</p>
+				<form id="math-form" method="post" action="{% url 'math_test_submit' %}">
+					{% csrf_token %}
+					{% for q in questions %}
+					<div class="test-question">
+						<div class="test-question-number">Question {{ forloop.counter }} of {{ questions|length }}</div>
+						<div class="test-input-group">
+							<span class="fs-5">{{ q.a }} {{ q.op }} {{ q.b }} =</span>
+							<input type="number" name="q_{{ forloop.counter0 }}" required class="form-control" style="max-width: 150px;">
+						</div>
+					</div>
+					{% endfor %}
+					<div class="text-center mt-4">
+						<button class="btn btn-primary btn-lg px-5" type="submit">Submit Answers</button>
+					</div>
+				</form>
+			</div>
+		</div>
 	</div>
 </div>
 <script>

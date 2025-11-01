@@ -1,23 +1,48 @@
 {% extends "base.html" %}
 {% block title %}Math Result{% endblock %}
 {% block content %}
-<h3>Math Test Result</h3>
-<p><strong>Score:</strong> {{ session.num_correct }} / {{ session.num_total }}</p>
-<p><strong>Time:</strong> {{ session.duration_seconds }} seconds</p>
-<table class="table table-sm">
-	<thead><tr><th>#</th><th>Question</th><th>Your Answer</th><th>Correct Answer</th><th>Correct?</th></tr></thead>
-	<tbody>
-		{% for q in session.details %}
-		<tr>
-			<td>{{ forloop.counter }}</td>
-			<td>{{ q.a }} {{ q.op }} {{ q.b }}</td>
-			<td>{{ q.user }}</td>
-			<td>{{ q.answer }}</td>
-			<td>{% if q.correct %}✅{% else %}❌{% endif %}</td>
-		</tr>
-		{% endfor %}
-	</tbody>
-</table>
-<a class="btn btn-secondary" href="{% url 'math_test_start' %}">Try Again</a>
-<a class="btn btn-primary ms-2" href="/">Home</a>
+<div class="row justify-content-center">
+	<div class="col-md-9">
+		<div class="result-card">
+			<div class="text-center mb-4">
+				<div class="result-score">{{ session.num_correct }} / {{ session.num_total }}</div>
+				<div class="result-label">Correct Answers</div>
+				<p class="text-muted mt-3 mb-0">Completed in {{ session.duration_seconds }} seconds</p>
+			</div>
+		</div>
+		
+		<div class="card">
+			<div class="card-body">
+				<h3 class="mb-3">Question Breakdown</h3>
+				<table class="table table-sm">
+					<thead>
+						<tr>
+							<th style="width: 50px;">#</th>
+							<th>Question</th>
+							<th>Your Answer</th>
+							<th>Correct</th>
+							<th style="width: 100px;">Result</th>
+						</tr>
+					</thead>
+					<tbody>
+						{% for q in session.details %}
+						<tr>
+							<td>{{ forloop.counter }}</td>
+							<td>{{ q.a }} {{ q.op }} {{ q.b }}</td>
+							<td>{{ q.user }}</td>
+							<td>{{ q.answer }}</td>
+							<td class="text-center">{% if q.correct %}<span class="badge bg-success">✓</span>{% else %}<span class="badge bg-danger">✗</span>{% endif %}</td>
+						</tr>
+						{% endfor %}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		
+		<div class="text-center mt-4">
+			<a class="btn btn-outline-primary" href="{% url 'math_test_start' %}">Try Again</a>
+			<a class="btn btn-primary ms-2" href="/">Go Home</a>
+		</div>
+	</div>
+</div>
 {% endblock %}
