@@ -1,48 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Math Result{% endblock %}
+{% block title %}Math Test Result{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-	<div class="col-md-9">
-		<div class="result-card">
-			<div class="text-center mb-4">
-				<div class="result-score">{{ session.num_correct }} / {{ session.num_total }}</div>
-				<div class="result-label">Correct Answers</div>
-				<p class="text-muted mt-3 mb-0">Completed in {{ session.duration_seconds }} seconds</p>
-			</div>
+<div class="max-w-6xl mx-auto">
+	<!-- Result Header -->
+	<div class="text-center mb-8">
+		<div class="inline-block p-3 bg-green-100 rounded-full mb-4">
+			<svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
 		</div>
-		
-		<div class="card">
-			<div class="card-body">
-				<h3 class="mb-3">Question Breakdown</h3>
-				<table class="table table-sm">
-					<thead>
-						<tr>
-							<th style="width: 50px;">#</th>
-							<th>Question</th>
-							<th>Your Answer</th>
-							<th>Correct</th>
-							<th style="width: 100px;">Result</th>
-						</tr>
-					</thead>
-					<tbody>
-						{% for q in session.details %}
-						<tr>
-							<td>{{ forloop.counter }}</td>
-							<td>{{ q.a }} {{ q.op }} {{ q.b }}</td>
-							<td>{{ q.user }}</td>
-							<td>{{ q.answer }}</td>
-							<td class="text-center">{% if q.correct %}<span class="badge bg-success">✓</span>{% else %}<span class="badge bg-danger">✗</span>{% endif %}</td>
-						</tr>
-						{% endfor %}
-					</tbody>
-				</table>
-			</div>
+		<h1 class="text-4xl font-bold text-gray-900 mb-2">Test Completed!</h1>
+		<p class="text-lg text-gray-600">Your results are below</p>
+	</div>
+
+	<!-- Score Card -->
+	<div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-8 mb-6">
+		<div class="text-center text-white">
+			<div class="text-6xl font-bold mb-2">{{ session.num_correct }} / {{ session.num_total }}</div>
+			<div class="text-xl opacity-90 mb-4">Correct Answers</div>
+			<div class="text-sm opacity-75">Completed in {{ session.duration_seconds }} seconds</div>
 		</div>
-		
-		<div class="text-center mt-4">
-			<a class="btn btn-outline-primary" href="{% url 'math_test_start' %}">Try Again</a>
-			<a class="btn btn-primary ms-2" href="/">Go Home</a>
+	</div>
+
+	<!-- Detailed Results -->
+	<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+		<h2 class="text-2xl font-bold text-gray-900 mb-6">Question Breakdown</h2>
+		<div class="overflow-x-auto">
+			<table class="w-full">
+				<thead>
+					<tr class="bg-gray-50 border-b border-gray-200">
+						<th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">#</th>
+						<th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Question</th>
+						<th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Your Answer</th>
+						<th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Correct</th>
+						<th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Result</th>
+					</tr>
+				</thead>
+				<tbody class="bg-white divide-y divide-gray-200">
+					{% for q in session.details %}
+					<tr class="hover:bg-gray-50 transition-colors">
+						<td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ forloop.counter }}</td>
+						<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ q.a }} {{ q.op }} {{ q.b }}</td>
+						<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ q.user }}</td>
+						<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ q.answer }}</td>
+						<td class="px-6 py-4 whitespace-nowrap">
+							{% if q.correct %}
+							<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+								✓ Correct
+							</span>
+							{% else %}
+							<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
+								✗ Incorrect
+							</span>
+							{% endif %}
+						</td>
+					</tr>
+					{% endfor %}
+				</tbody>
+			</table>
 		</div>
+	</div>
+
+	<!-- Action Buttons -->
+	<div class="flex justify-center space-x-4">
+		<a href="{% url 'math_test_start' %}" class="px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg font-semibold hover:border-blue-500 hover:text-blue-600 transition-all">
+			Try Again
+		</a>
+		<a href="/" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-md">
+			Go to Dashboard
+		</a>
 	</div>
 </div>
 {% endblock %}

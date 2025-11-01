@@ -1,47 +1,99 @@
 {% extends "base.html" %}
 {% block title %}Math Test{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-	<div class="col-md-7">
-		<div class="card">
-			<div class="card-body">
-				<h2 class="mb-4">Math Test</h2>
-				<div class="timer-display text-center">
-					⏱️ Time Remaining: <span id="time">180</span> seconds
-				</div>
-				<p class="text-muted mb-4">Answer all questions. The test will auto-submit when time runs out.</p>
-				<form id="math-form" method="post" action="{% url 'math_test_submit' %}">
-					{% csrf_token %}
-					{% for q in questions %}
-					<div class="test-question">
-						<div class="test-question-number">Question {{ forloop.counter }} of {{ questions|length }}</div>
-						<div class="test-input-group">
-							<span class="fs-5">{{ q.a }} {{ q.op }} {{ q.b }} =</span>
-							<input type="number" name="q_{{ forloop.counter0 }}" required class="form-control" style="max-width: 150px;">
-						</div>
-					</div>
-					{% endfor %}
-					<div class="text-center mt-4">
-						<button class="btn btn-primary btn-lg px-5" type="submit">Submit Answers</button>
-					</div>
-				</form>
+<div class="max-w-4xl mx-auto">
+	<!-- Header -->
+	<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+		<h1 class="text-3xl font-bold text-gray-900 mb-2">Math Assessment Test</h1>
+		<p class="text-gray-600">Answer all arithmetic questions. The test will auto-submit when time runs out.</p>
+	</div>
+
+	<!-- Timer -->
+	<div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-md p-6 mb-6 text-center">
+		<div class="flex items-center justify-center space-x-3">
+			<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+			</svg>
+			<div>
+				<p class="text-sm text-white opacity-90">Time Remaining</p>
+				<p class="text-4xl font-bold text-white" id="time">180</p>
 			</div>
 		</div>
 	</div>
+
+	<!-- Progress Bar -->
+	<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+		<div class="flex items-center justify-between mb-2">
+			<span class="text-sm font-medium text-gray-700">Progress</span>
+			<span class="text-sm font-medium text-blue-600"><span id="progress">0</span>/{{ questions|length }}</span>
+		</div>
+		<div class="w-full bg-gray-200 rounded-full h-3">
+			<div class="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300" style="width: 0%" id="progressBar"></div>
+		</div>
+	</div>
+
+	<!-- Questions Card -->
+	<div class="bg-white rounded-xl shadow-md p-6 mb-6">
+		<form id="math-form" method="post" action="{% url 'math_test_submit' %}">
+			{% csrf_token %}
+			{% for q in questions %}
+			<div class="mb-6 pb-6 border-b border-gray-200 last:border-b-0 last:pb-0 last:mb-0">
+				<div class="flex items-start space-x-4">
+					<div class="flex-shrink-0 w-10 h-10 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center font-bold">
+						{{ forloop.counter }}
+					</div>
+					<div class="flex-1">
+						<label class="block text-lg font-semibold text-gray-900 mb-3">
+							{{ q.a }} {{ q.op }} {{ q.b }} = ?
+						</label>
+						<div class="flex items-center space-x-3">
+							<input 
+								type="number" 
+								name="q_{{ forloop.counter0 }}" 
+								required 
+								class="w-32 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg font-medium"
+								placeholder="Answer"
+								oninput="updateProgress()"
+							>
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
+
+			<div class="flex justify-center mt-8">
+				<button type="submit" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg hover:shadow-xl">
+					Submit Answers
+				</button>
+			</div>
+		</form>
+	</div>
 </div>
+
 <script>
-(function(){
 	let seconds = 180;
 	const el = document.getElementById('time');
 	const form = document.getElementById('math-form');
-	const timer = setInterval(()=>{
+	const totalQuestions = {{ questions|length }};
+
+	function updateProgress() {
+		const inputs = document.querySelectorAll('input[type="number"]');
+		let filled = 0;
+		inputs.forEach(input => {
+			if (input.value.trim() !== '') filled++;
+		});
+		const progress = Math.round((filled / totalQuestions) * 100);
+		document.getElementById('progress').textContent = filled;
+		document.getElementById('progressBar').style.width = progress + '%';
+	}
+
+	const timer = setInterval(() => {
 		seconds -= 1;
 		el.textContent = seconds;
-		if(seconds <= 0){
+		if (seconds <= 0) {
 			clearInterval(timer);
 			form.submit();
 		}
 	}, 1000);
-})();
 </script>
 {% endblock %}
