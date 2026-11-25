@@ -17,3 +17,5 @@ deploy
 Jenkinsfile
 docker-compose*.yml
 README.md
+frontend
+render.yaml

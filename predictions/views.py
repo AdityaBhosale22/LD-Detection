@@ -1,30 +1,40 @@
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from assessments.models import DemographicProfile
 from .models import PredictionResult
 from .services import LDClassifier, default_model_spec
 
 
-@login_required
-def predict_from_intake(request, intake_id: int):
-	profile = get_object_or_404(DemographicProfile, pk=intake_id, user=request.user)
-	classifier = LDClassifier(default_model_spec())
-	result = classifier.predict(profile)
+def serialize_prediction(prediction):
+	if prediction is None:
+		return None
+	return {
+		"id": prediction.id,
+		"label": prediction.label,
+		"probability": round(prediction.probability, 4),
+		"intake_id": prediction.intake_id,
+		"created_at": prediction.created_at,
+	}
+
+
+@api_view(["GET", "POST"])
+def predictions(request):
+	"""GET the latest prediction, or POST to run the model on the latest intake."""
+	if request.method == "GET":
+		return Response(serialize_prediction(PredictionResult.objects.filter(user=request.user).first()))
+
+	profile = DemographicProfile.objects.filter(user=request.user).first()
+	if profile is None:
+		return Response({"detail": "Complete the intake form first."}, status=status.HTTP_400_BAD_REQUEST)
+
+	result = LDClassifier(default_model_spec()).predict(profile)
 	prediction = PredictionResult.objects.create(
 		user=request.user,
 		intake=profile,
 		label=result["label"],
 		probability=result["probability"],
-		model_name="sklearn",
+		model_name="logistic_regression_baseline",
 	)
-	return redirect(reverse("prediction_detail", args=[prediction.id]))
-
-
-@login_required
-def prediction_detail(request, prediction_id: int):
-	prediction = get_object_or_404(PredictionResult, pk=prediction_id, user=request.user)
-	return render(request, "predictions/detail.html", {"prediction": prediction})
-
-
+	return Response(serialize_prediction(prediction), status=status.HTTP_201_CREATED)

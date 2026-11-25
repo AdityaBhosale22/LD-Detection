@@ -1,183 +1,50 @@
-from io import BytesIO
-
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
-from django.shortcuts import render
-from django.utils import timezone
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
-from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-
-from assessments.models import (
-	DemographicProfile,
-	MathTestSession,
-	GrammarTestSession,
-	ReadingTestSession,
-	MemoryTestSession,
-	ScenarioTestSession,
-)
+from accounts.serializers import UserSerializer
+from assessments.engine import TESTS
+from assessments.models import DemographicProfile
+from assessments.serializers import DemographicProfileSerializer
 from predictions.models import PredictionResult
-from recommendations.models import Recommendation
-from recommendations.services import compute_user_area_scores
+from predictions.views import serialize_prediction
+from recommendations.services import compute_user_area_scores, generate_recommendations
+from .pdf import build_report_pdf
 from .storage import upload_report
 
-# Matplotlib (non-interactive backend)
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+
+@api_view(["GET"])
+def dashboard(request):
+	"""Everything the dashboard page needs in one request."""
+	user = request.user
+	profile = DemographicProfile.objects.filter(user=user).first()
+
+	tests = {}
+	for kind, test in TESTS.items():
+		latest = test.model.objects.filter(user=user, ended_at__isnull=False).order_by("-started_at").first()
+		if latest is None:
+			tests[kind] = None
+			continue
+		summary = test.result(latest)
+		summary.pop("details", None)
+		summary["completed_at"] = latest.ended_at
+		tests[kind] = summary
+
+	return Response({
+		"user": UserSerializer(user).data,
+		"intake": DemographicProfileSerializer(profile).data if profile else None,
+		"prediction": serialize_prediction(PredictionResult.objects.filter(user=user).first()),
+		"tests": tests,
+		"areas": [{"area": a.area, "score": round(a.score, 2)} for a in compute_user_area_scores(user)],
+	})
 
 
-@login_required
+@api_view(["GET"])
 def download_report(request):
-	buffer = BytesIO()
-	doc = SimpleDocTemplate(buffer, pagesize=A4)
-	styles = getSampleStyleSheet()
-	story = []
-
-	# Header
-	story.append(Paragraph("LD Detection - Student Report", styles["Title"]))
-	story.append(Paragraph(timezone.now().strftime("Generated on %Y-%m-%d %H:%M UTC"), styles["Normal"]))
-	story.append(Spacer(1, 12))
-
-	# User info
-	story.append(Paragraph(f"User: {request.user.email}", styles["Heading3"]))
-	profile = DemographicProfile.objects.filter(user=request.user).order_by("-created_at").first()
-	if profile:
-		data = [["Age", profile.age], ["Gender", profile.gender], ["Reading difficulties", "Yes" if profile.reading_difficulties else "No"], ["Attention", profile.attention_span]]
-		table = Table(data, hAlign="LEFT")
-		table.setStyle(TableStyle([("GRID", (0,0), (-1,-1), 0.25, colors.grey)]))
-		story.append(table)
-		story.append(Spacer(1, 12))
-
-	# Prediction
-	story.append(Paragraph("Model Prediction", styles["Heading3"]))
-	pred = PredictionResult.objects.filter(user=request.user).order_by("-created_at").first()
-	if pred:
-		story.append(Paragraph(f"Label: <b>{pred.label}</b>", styles["Normal"]))
-		story.append(Paragraph(f"Probability (LD): {pred.probability:.2f}", styles["Normal"]))
-	else:
-		story.append(Paragraph("No prediction available.", styles["Normal"]))
-	story.append(Spacer(1, 12))
-
-	# Test summaries
-	def add_test_section(title, qs, cols, row_fn):
-		story.append(Paragraph(title, styles["Heading3"]))
-		latest = qs.order_by("-started_at").first()
-		if latest:
-			story.append(Paragraph(f"Score: {getattr(latest, 'num_correct', 0)} / {getattr(latest, 'num_total', 0)}", styles["Normal"]))
-			story.append(Paragraph(f"Duration: {getattr(latest, 'duration_seconds', 0)} seconds", styles["Normal"]))
-			rows = [cols] + row_fn(latest)
-			t = Table(rows, hAlign="LEFT")
-			t.setStyle(TableStyle([
-				("GRID", (0,0), (-1,-1), 0.25, colors.grey),
-				("BACKGROUND", (0,0), (-1,0), colors.whitesmoke),
-			]))
-			story.append(t)
-		else:
-			story.append(Paragraph("No attempts recorded.", styles["Normal"]))
-		story.append(Spacer(1, 12))
-
-	add_test_section(
-		"Math Test",
-		MathTestSession.objects.filter(user=request.user),
-		["#", "Question", "Your", "Correct", "✓"],
-		lambda s: [[i+1, f"{d['a']} {d['op']} {d['b']}", d.get("user"), d.get("answer"), "Yes" if d.get("correct") else "No"] for i,d in enumerate(s.details[:10])]
-	)
-
-	add_test_section(
-		"Grammar Test",
-		GrammarTestSession.objects.filter(user=request.user),
-		["#", "Prompt", "Your", "Correct", "✓"],
-		lambda s: [[i+1, d.get("prompt"), d.get("user"), d.get("answer"), "Yes" if d.get("correct") else "No"] for i,d in enumerate(s.details[:10])]
-	)
-
-	# Reading summary
-	story.append(Paragraph("Reading Test", styles["Heading3"]))
-	read = ReadingTestSession.objects.filter(user=request.user).order_by("-started_at").first()
-	if read:
-		story.append(Paragraph(f"WPM: {read.wpm:.1f}, Accuracy: {read.accuracy:.2f}", styles["Normal"]))
-		story.append(Paragraph("Passage:", styles["Normal"]))
-		story.append(Paragraph(read.passage, styles["Normal"]))
-	else:
-		story.append(Paragraph("No attempts recorded.", styles["Normal"]))
-	story.append(Spacer(1, 12))
-
-	add_test_section(
-		"Memory Test",
-		MemoryTestSession.objects.filter(user=request.user),
-		["#", "Target", "Your", "✓"],
-		lambda s: [[i+1, s.sequence[i] if i < len(s.sequence) else "", s.response[i] if i < len(s.response) else "", "Yes" if (i < len(s.sequence) and i < len(s.response) and s.sequence[i]==s.response[i]) else "No"] for i in range(min(10, max(len(s.sequence), len(s.response))))]
-	)
-
-	add_test_section(
-		"Scenario Test",
-		ScenarioTestSession.objects.filter(user=request.user),
-		["#", "Question", "Your", "Correct", "✓"],
-		lambda s: [[i+1, d.get("q"), d.get("user"), d.get("a"), "Yes" if d.get("correct") else "No"] for i,d in enumerate(s.details[:10])]
-	)
-
-	# Analytics chart (area weaknesses)
-	areas = compute_user_area_scores(request.user)
-	if areas:
-		# Create bar chart into buffer
-		labels = [a.area.title() for a in areas]
-		values = [a.score for a in areas]
-		fig, ax = plt.subplots(figsize=(6, 3))
-		ax.bar(labels, values, color="#4e79a7")
-		ax.set_ylim(0, 1)
-		ax.set_ylabel("Weakness (0..1)")
-		ax.set_title("Area Weakness Scores")
-		img_buf = BytesIO()
-		plt.tight_layout()
-		fig.savefig(img_buf, format="PNG")
-		plt.close(fig)
-		img_buf.seek(0)
-		from reportlab.platypus import Image as RLImage
-		story.append(RLImage(img_buf, width=400, height=200))
-		story.append(Spacer(1, 12))
-
-	# Recommendations
-	story.append(Paragraph("Recommendations", styles["Heading3"]))
-	recs = Recommendation.objects.filter(user=request.user).order_by("-score")[:10]
-	if recs:
-		rows = [["Area", "Title", "Score"]] + [[r.area.title(), r.title, f"{r.score:.2f}"] for r in recs]
-		t = Table(rows, hAlign="LEFT")
-		t.setStyle(TableStyle([("GRID", (0,0), (-1,-1), 0.25, colors.grey), ("BACKGROUND", (0,0), (-1,0), colors.whitesmoke)]))
-		story.append(t)
-	else:
-		story.append(Paragraph("No recommendations at this time.", styles["Normal"]))
-
-	doc.build(story)
-	pdf = buffer.getvalue()
-	buffer.close()
+	"""Generate the PDF report, archive it to S3 (if configured) and return it."""
+	generate_recommendations(request.user)
+	pdf = build_report_pdf(request.user)
 	upload_report(pdf, request.user.pk)
-	resp = HttpResponse(pdf, content_type="application/pdf")
-	resp["Content-Disposition"] = "attachment; filename=ld_report.pdf"
-	return resp
-
-
-@login_required
-def analytics_dashboard(request):
-	areas = compute_user_area_scores(request.user)
-	labels = [a.area.title() for a in areas]
-	values = [a.score for a in areas]
-	img_data_uri = None
-	if areas:
-		fig, ax = plt.subplots(figsize=(6, 3))
-		ax.bar(labels, values, color="#f28e2b")
-		ax.set_ylim(0, 1)
-		ax.set_ylabel("Weakness (0..1)")
-		ax.set_title("Area Weakness Scores")
-		buf = BytesIO()
-		plt.tight_layout()
-		fig.savefig(buf, format="png")
-		plt.close(fig)
-		buf.seek(0)
-		import base64
-		img_b64 = base64.b64encode(buf.read()).decode("ascii")
-		img_data_uri = f"data:image/png;base64,{img_b64}"
-	return render(request, "reports/dashboard.html", {"labels": labels, "values": values, "img_data_uri": img_data_uri})
-
-
+	response = HttpResponse(pdf, content_type="application/pdf")
+	response["Content-Disposition"] = 'attachment; filename="ld_report.pdf"'
+	return response

@@ -1,5 +1,9 @@
 # Deploying to AWS (EC2 + ECR + S3)
 
+This is the Jenkins CD path for the API. The public demo runs on Vercel + Render instead
+(see [LIVE_DEPLOY.md](LIVE_DEPLOY.md)), because a browser app served over HTTPS needs an HTTPS API.
+To point the Vercel frontend at EC2, put the instance behind HTTPS first (for example Caddy plus a domain).
+
 This setup fits in the AWS free tier: one `t2.micro`/`t3.micro` EC2 instance, one ECR
 repository, and one S3 bucket. Region used below: `ap-south-1`. Change it if you need to.
 
@@ -83,6 +87,7 @@ DJANGO_SECRET_KEY=<long random string>
 DJANGO_ALLOWED_HOSTS=<ec2-public-ip-or-dns>
 DJANGO_CSRF_TRUSTED_ORIGINS=http://<ec2-public-ip-or-dns>
 DB_PASSWORD=<strong password>
+CORS_ALLOWED_ORIGINS=<your frontend URL, e.g. https://ld-detection.vercel.app>
 AWS_REGION=ap-south-1
 AWS_S3_REPORTS_BUCKET=<your-reports-bucket>
 WEB_PORT=80
@@ -108,8 +113,8 @@ It finishes with a smoke test against `/healthz/`.
 curl http://<ec2-public-ip>/healthz/          # {"status": "ok"}
 ```
 
-Open `http://<ec2-public-ip>/`, register, then download a report from the sidebar. The PDF
-then shows up in S3:
+Register and download a report through the API (or a frontend pointed at it). The PDF then
+shows up in S3:
 
 ```bash
 aws s3 ls s3://<your-reports-bucket>/reports/ --recursive

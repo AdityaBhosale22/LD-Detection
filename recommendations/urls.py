@@ -1,9 +1,7 @@
 from django.urls import path
-from .views import my_recommendations
 
+from . import views
 
 urlpatterns = [
-	path("", my_recommendations, name="my_recommendations"),
+	path("", views.recommendations, name="recommendations"),
 ]
-
-

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 
+import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
@@ -41,8 +42,8 @@ INSTALLED_APPS = [
 	"django.contrib.messages",
 	"django.contrib.staticfiles",
 	"rest_framework",
-	"crispy_forms",
-	"crispy_bootstrap5",
+	"rest_framework.authtoken",
+	"corsheaders",
 	"accounts",
 	"assessments",
 	"predictions",
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
 	"django.middleware.security.SecurityMiddleware",
 	"whitenoise.middleware.WhiteNoiseMiddleware",
+	"corsheaders.middleware.CorsMiddleware",
 	"django.contrib.sessions.middleware.SessionMiddleware",
 	"django.middleware.common.CommonMiddleware",
 	"django.middleware.csrf.CsrfViewMiddleware",
@@ -66,7 +68,7 @@ ROOT_URLCONF = "lddiag.urls"
 TEMPLATES = [
 	{
 		"BACKEND": "django.template.backends.django.DjangoTemplates",
-		"DIRS": [BASE_DIR / "templates"],
+		"DIRS": [],
 		"APP_DIRS": True,
 		"OPTIONS": {
 			"context_processors": [
@@ -82,17 +84,13 @@ TEMPLATES = [
 WSGI_APPLICATION = "lddiag.wsgi.application"
 ASGI_APPLICATION = "lddiag.asgi.application"
 
-# SQLite by default; docker-compose switches to PostgreSQL via DB_* variables.
+# SQLite by default; set DATABASE_URL for PostgreSQL
+# (docker-compose, CI, and Neon in production), e.g. postgres://user:pass@host:5432/db
 DATABASES = {
-	"default": {
-		"ENGINE": os.environ.get("DB_ENGINE", "django.db.backends.sqlite3"),
-		"NAME": os.environ.get("DB_NAME", BASE_DIR / "db.sqlite3"),
-		"USER": os.environ.get("DB_USER", ""),
-		"PASSWORD": os.environ.get("DB_PASSWORD", ""),
-		"HOST": os.environ.get("DB_HOST", ""),
-		"PORT": os.environ.get("DB_PORT", ""),
-		"CONN_MAX_AGE": int(os.environ.get("DB_CONN_MAX_AGE", "60")),
-	}
+	"default": dj_database_url.config(
+		default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
+		conn_max_age=60,
+	)
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -108,8 +106,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"]
+STATIC_ROOT = BASE_DIR / "staticfiles"  # only Django admin's assets; the UI lives in frontend/
 STORAGES = {
 	"default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
 	"staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
@@ -117,17 +114,25 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
-CRISPY_TEMPLATE_PACK = "bootstrap5"
-
 AUTH_USER_MODEL = "accounts.UserAccount"
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "home"
-LOGOUT_REDIRECT_URL = "login"
+
+# --- REST API ----------------------------------------------------------------
+# The React frontend (on a different domain) sends "Authorization: Token <key>".
+REST_FRAMEWORK = {
+	"DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework.authentication.TokenAuthentication"],
+	"DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+	"DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+	"DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.AnonRateThrottle"],
+	"DEFAULT_THROTTLE_RATES": {"anon": "30/minute"},
+}
+
+# Origins allowed to call the API from a browser (the Vercel URL in production).
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
 
 # --- AWS -------------------------------------------------------------------
 # When AWS_S3_REPORTS_BUCKET is set, every generated PDF report is archived to S3.
-# Credentials come from the standard boto3 chain (EC2 instance role in production).
+# Credentials come from the standard boto3 chain: the EC2 instance role,
+# or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY env vars on other hosts.
 AWS_REGION = os.environ.get("AWS_REGION", "ap-south-1")
 AWS_S3_REPORTS_BUCKET = os.environ.get("AWS_S3_REPORTS_BUCKET", "")
 

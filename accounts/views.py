@@ -1,33 +1,39 @@
-from django.contrib import messages
-from django.contrib.auth import login, logout
-from django.contrib.auth.views import LoginView
-from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
-from .forms import RegistrationForm, EmailAuthenticationForm
+from .serializers import LoginSerializer, RegisterSerializer, UserSerializer
 
 
+def _auth_response(user, status_code=status.HTTP_200_OK):
+	token, _ = Token.objects.get_or_create(user=user)
+	return Response({"token": token.key, "user": UserSerializer(user).data}, status=status_code)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
 def register(request):
-	if request.method == "POST":
-		form = RegistrationForm(request.POST)
-		if form.is_valid():
-			user = form.save()
-			login(request, user)
-			messages.success(request, "Registration successful.")
-			return redirect("home")
-	else:
-		form = RegistrationForm()
-	return render(request, "accounts/register.html", {"form": form})
+	serializer = RegisterSerializer(data=request.data)
+	serializer.is_valid(raise_exception=True)
+	return _auth_response(serializer.save(), status.HTTP_201_CREATED)
 
 
-class EmailLoginView(LoginView):
-	template_name = "accounts/login.html"
-	form_class = EmailAuthenticationForm
-	redirect_authenticated_user = True
-	success_url = reverse_lazy("home")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def login(request):
+	serializer = LoginSerializer(data=request.data)
+	serializer.is_valid(raise_exception=True)
+	return _auth_response(serializer.validated_data["user"])
 
 
-def logout_view(request):
-	logout(request)
-	messages.info(request, "Logged out.")
-	return redirect("login")
+@api_view(["POST"])
+def logout(request):
+	Token.objects.filter(user=request.user).delete()
+	return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(["GET"])
+def me(request):
+	return Response(UserSerializer(request.user).data)

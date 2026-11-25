@@ -2,137 +2,147 @@
 
 ![CI](https://github.com/AdityaBhosale22/LD-Detection/actions/workflows/ci.yml/badge.svg)
 
-A Django web app that screens students for possible learning disabilities (LD). Students
-complete a short intake and five skill tests. The app then runs an ML model on their profile,
-shows weak areas on a dashboard, suggests practice resources, and generates a downloadable PDF
-report. Reports are archived to Amazon S3.
+**Live demo:** _add your Vercel URL here_ · The API sleeps when idle, so the first sign-in can take ~30–60s.
 
-The app is containerised with Docker, tested in GitHub Actions, and deployed to AWS EC2
-through a Jenkins pipeline that pushes images to Amazon ECR.
+A web app that screens students for possible learning difficulties (LD). Students fill in a
+short profile and take five quick skill tests. A machine-learning model gives a screening
+result, a dashboard shows weak areas, and the app suggests practice resources and generates a
+downloadable PDF report.
+
+- **Frontend:** React + TypeScript (Vite, Tailwind), deployed on **Vercel**
+- **Backend:** Django REST API with token auth, containerised with **Docker**
+- **CI/CD:** **GitHub Actions** (tests, lint, Docker smoke test) and a **Jenkins** pipeline that pushes to **AWS ECR** and deploys to **EC2**
+- **Cloud:** API on Render (live demo) or EC2, PostgreSQL (Neon), PDF reports archived to **S3**
 
 ## Features
 
-- **Accounts:** email-based registration and login with student, teacher and parent roles
-- **Assessments:** demographic intake plus math, grammar, reading, memory and scenario tests, with scoring and timing
-- **Prediction:** a scikit-learn logistic regression model gives the probability of LD from the intake profile
-- **Recommendations:** per-area weakness scores mapped to practice resources
-- **Reports:** a PDF report (ReportLab + Matplotlib chart) that is downloaded and also uploaded to S3
-- **Health check:** `/healthz/` checks the database and is used by Docker, CI and the deploy step
-
-## Tech stack
-
-| Layer      | Tools                                               |
-|------------|-----------------------------------------------------|
-| App        | Python 3.12, Django 5, scikit-learn, ReportLab, Matplotlib |
-| Database   | PostgreSQL 16 (Docker/production), SQLite (local dev) |
-| Container  | Docker, Docker Compose, gunicorn, WhiteNoise        |
-| CI         | GitHub Actions (tests on Postgres, Docker build, smoke test) |
-| CD         | Jenkins: build → test → push to ECR → deploy to EC2 |
-| Cloud      | AWS EC2, ECR, S3, IAM instance role                 |
+- **Accounts:** register and sign in with email, with student, parent and teacher roles
+- **Five assessments:**
+  - **Math:** 10 arithmetic questions
+  - **Grammar:** multiple choice
+  - **Reading aloud:** speech recognition in the browser, scored on words per minute and accuracy
+  - **Memory:** recall a digit sequence
+  - **Comprehension:** a short story with questions
+- **Screening:** a scikit-learn model gives the probability of LD indicators from the student profile
+- **Dashboard:** progress, latest scores and performance by area
+- **Recommendations:** practice resources for the weakest areas
+- **PDF report:** ReportLab + a Matplotlib chart, uploaded to S3 when it is configured
 
 ## Architecture
 
 ```
-                 ┌──────────────── GitHub ────────────────┐
-  git push ────▶ │  GitHub Actions: tests + docker build  │
-                 └───────────────────┬────────────────────┘
-                                     │
-                              Jenkins pipeline
-                 build image → run tests → push to ECR → ssh deploy
-                                     │
-                    ┌────────────── EC2 ───────────────┐
-                    │  docker compose                  │
-                    │   ├─ web: Django + gunicorn :80  │──▶ S3 (PDF reports)
-                    │   └─ db:  PostgreSQL 16          │
-                    └──────────────────────────────────┘
+            ┌─────────────── Vercel ───────────────┐
+ Browser ──▶│ React SPA (frontend/)                │
+            └──────────────────┬───────────────────┘
+                               │ HTTPS, Authorization: Token …
+            ┌──────────────────▼───────────────────┐
+            │ Django REST API in Docker (gunicorn) │──▶ S3 (PDF reports)
+            │ Render (demo)  or  EC2 via Jenkins   │
+            └──────────────────┬───────────────────┘
+                               ▼
+                        PostgreSQL (Neon / container)
+
+ git push ─▶ GitHub Actions: backend tests on Postgres · frontend lint+build · docker compose smoke test
+ main     ─▶ Jenkins: build image → test in image → push to ECR → deploy to EC2 → health check
 ```
+
+## API overview
+
+All endpoints except register and login need an `Authorization: Token <key>` header.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/auth/register/`, `/api/auth/login/` | Returns `{token, user}` |
+| POST / GET | `/api/auth/logout/`, `/api/auth/me/` | End the session / current user |
+| GET / POST | `/api/intake/` | Latest profile / save a new one |
+| GET / POST | `/api/predictions/` | Latest prediction / run the model |
+| POST | `/api/tests/<kind>/start/` | Start a test (`math`, `grammar`, `reading`, `memory`, `scenario`) |
+| POST | `/api/tests/<kind>/<id>/submit/` | Submit answers and get the graded result |
+| GET | `/api/tests/<kind>/<id>/` | Result of a test |
+| GET | `/api/dashboard/` | Everything the dashboard needs in one call |
+| GET | `/api/recommendations/` | Practice suggestions, weakest area first |
+| GET | `/api/report/` | PDF report (also archived to S3) |
+| GET | `/healthz/` | Health check (also tests the database) |
+
+The tests are stateless. Questions are stored on the test session when it starts, answers are
+never sent to the browser, and a test can only be submitted once.
 
 ## Run locally
 
-### Option 1: Docker (recommended)
+**Backend (Python 3.12):**
 
 ```bash
-cp .env.example .env        # optional; sensible defaults are built in
-docker compose up --build
-```
-
-Then open <http://localhost:8000> and register a new account.
-
-### Option 2: Python virtualenv
-
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python ml/build_baseline.py        # trains ml/ld_model.joblib
 python manage.py migrate
-python manage.py runserver
+python manage.py runserver         # http://localhost:8000
 ```
 
-## Tests
+Or run the API + PostgreSQL in Docker with `docker compose up --build`.
+
+**Frontend (Node 22+):**
 
 ```bash
-python manage.py test tests
+cd frontend
+cp .env.example .env               # VITE_API_URL=http://localhost:8000
+npm install
+npm run dev                        # http://localhost:5173
 ```
 
-The tests cover registration and login protection, the intake-to-prediction flow (including
-blocking access to another user's data), math test scoring, PDF generation, and the S3 upload
-(boto3 is mocked, so no AWS account is needed).
+## Tests and checks
 
-## CI/CD
+```bash
+python manage.py test tests                  # 19 API tests
+cd frontend && npm run lint && npm run build # ESLint + TypeScript + production build
+```
 
-**GitHub Actions** (`.github/workflows/ci.yml`) runs on every push and pull request:
-1. Runs the test suite against a PostgreSQL service container
-2. Fails if model changes are missing a migration
-3. Builds the Docker image, starts the full `docker compose` stack and polls `/healthz/`
+The backend tests cover:
+- auth (tokens, weak passwords, logout)
+- the profile-to-prediction flow
+- scoring for all five tests, including that answers are hidden and a test can't be submitted twice
+- users being unable to see each other's data
+- dashboard and recommendations
+- the PDF report and the S3 upload (boto3 mocked)
+- CORS
 
-**Jenkins** (`Jenkinsfile`) handles delivery on `main`:
-1. Builds the Docker image, tagged with the build number
-2. Runs the tests inside that image
-3. Pushes the image to Amazon ECR
-4. SSHes into EC2, pulls the new image and restarts with `docker compose`
-5. Runs a smoke test against `/healthz/` on the server
+## Deployment
 
-Step-by-step AWS setup (S3, ECR, IAM role, EC2, Jenkins credentials) is in
-[`deploy/AWS_DEPLOY.md`](deploy/AWS_DEPLOY.md).
+- **Live demo (Vercel + Render + Neon):** [`deploy/LIVE_DEPLOY.md`](deploy/LIVE_DEPLOY.md)
+- **AWS (Jenkins → ECR → EC2, S3, IAM role):** [`deploy/AWS_DEPLOY.md`](deploy/AWS_DEPLOY.md)
 
-## Configuration
+Both deploy the same `Dockerfile`. Configuration comes only from environment variables:
 
-All settings come from environment variables (or a `.env` file):
-
-| Variable                      | Default                  | Purpose                                 |
-|-------------------------------|--------------------------|-----------------------------------------|
-| `DJANGO_DEBUG`                | `1` (local), `0` in Docker | Debug mode                             |
-| `DJANGO_SECRET_KEY`           | required when debug is off | Django secret key                      |
-| `DJANGO_ALLOWED_HOSTS`        | `*` in debug             | Comma-separated hostnames               |
-| `DJANGO_CSRF_TRUSTED_ORIGINS` | empty                    | e.g. `http://<ec2-ip>`                  |
-| `DB_ENGINE`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT` | SQLite | Database connection |
-| `AWS_REGION`                  | `ap-south-1`             | AWS region                              |
-| `AWS_S3_REPORTS_BUCKET`       | empty (upload disabled)  | Bucket where PDF reports are archived   |
+| Variable | Purpose |
+|---|---|
+| `DJANGO_SECRET_KEY` | Required when `DJANGO_DEBUG=0` |
+| `DJANGO_DEBUG` | `1` locally (default), `0` in Docker/production |
+| `DJANGO_ALLOWED_HOSTS` | Comma-separated hostnames |
+| `DATABASE_URL` | PostgreSQL URL (defaults to SQLite) |
+| `CORS_ALLOWED_ORIGINS` | Frontend URL(s) allowed to call the API |
+| `AWS_REGION`, `AWS_S3_REPORTS_BUCKET` | Enable the S3 report archive |
+| `VITE_API_URL` (frontend) | API base URL |
 
 ## About the ML model
 
 `ml/build_baseline.py` trains a logistic regression on **synthetic data**: reading
-difficulties and low attention raise the risk, and age has a small effect. It shows the
-end-to-end pipeline (feature vector → model → stored prediction → report). It is not a
-clinically validated screening tool. The next step would be to train on real assessment data
-and add the test scores as features.
-
-The model file is a build artifact. The Docker build and CI train it with a fixed seed, so it
-is not committed to git.
+difficulties and low attention raise the risk. It demonstrates the full pipeline
+(features → model → stored prediction → report). It is not a clinically validated tool, and
+the app says so wherever it shows a result. The next step would be to train on real
+assessment data and use the test scores as features.
 
 ## Project structure
 
 ```
-accounts/          custom email-based user model, auth views
-assessments/       intake form and the five skill tests
-predictions/       model loading + inference service
-recommendations/   weakness scoring and resource suggestions
-reports/           PDF report, analytics dashboard, S3 upload (storage.py)
+frontend/          React + TypeScript app (Vercel)
+accounts/          email-based user model, token auth endpoints
+assessments/       profile endpoint + test engine (question generation and scoring)
+predictions/       model loading and inference
+recommendations/   weakness scoring and practice suggestions
+reports/           dashboard summary, PDF report, S3 upload
 ml/                baseline model training script
 lddiag/            Django settings, URLs, /healthz/
-tests/             test suite
-docker/            container entrypoint (runs migrations, then gunicorn)
-deploy/            AWS deployment guide
-Dockerfile, docker-compose.yml, Jenkinsfile, .github/workflows/ci.yml
+tests/             API test suite
+docker/, Dockerfile, docker-compose.yml, Jenkinsfile, render.yaml, .github/workflows/
+deploy/            deployment guides
 ```

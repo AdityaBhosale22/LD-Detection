@@ -16,24 +16,30 @@ class AreaScore:
 
 
 def compute_user_area_scores(user) -> List[AreaScore]:
-	areas: List[AreaScore] = []
-	# For each area, compute average performance and convert to weakness score
-	def ratio(qs, correct_field="num_correct", total_field="num_total"):
-		agg = qs.aggregate(avg_correct=Avg(correct_field), avg_total=Avg(total_field))
-		c = (agg["avg_correct"] or 0)
-		t = (agg["avg_total"] or 0)
-		return (1.0 - (c / t)) if t else 0.0
+	"""Weakness score per area (0 = strong, 1 = weak), averaged over completed tests.
 
-	areas.append(AreaScore("math", ratio(MathTestSession.objects.filter(user=user))))
-	areas.append(AreaScore("grammar", ratio(GrammarTestSession.objects.filter(user=user))))
+	Areas the user has not completed a test for are left out rather than scored as 0.
+	"""
+	areas: List[AreaScore] = []
+
+	def completed(model):
+		return model.objects.filter(user=user, ended_at__isnull=False)
+
+	def add_ratio(area, model):
+		agg = completed(model).aggregate(avg_correct=Avg("num_correct"), avg_total=Avg("num_total"))
+		if agg["avg_total"]:
+			areas.append(AreaScore(area, 1.0 - agg["avg_correct"] / agg["avg_total"]))
+
+	add_ratio("math", MathTestSession)
+	add_ratio("grammar", GrammarTestSession)
 	# Reading weakness: combine low accuracy and low WPM
-	read_qs = ReadingTestSession.objects.filter(user=user)
-	read_acc_weak = 1.0 - (read_qs.aggregate(v=Avg("accuracy"))["v"] or 0)
-	read_wpm = (read_qs.aggregate(v=Avg("wpm"))["v"] or 0)
-	read_wpm_weak = 1.0 if read_wpm < 80 else (0.5 if read_wpm < 120 else 0.0)
-	areas.append(AreaScore("reading", min(1.0, max(0.0, 0.6 * read_acc_weak + 0.4 * read_wpm_weak))))
-	areas.append(AreaScore("memory", ratio(MemoryTestSession.objects.filter(user=user))))
-	areas.append(AreaScore("scenario", ratio(ScenarioTestSession.objects.filter(user=user))))
+	read = completed(ReadingTestSession).aggregate(acc=Avg("accuracy"), wpm=Avg("wpm"))
+	if read["acc"] is not None:
+		acc_weak = 1.0 - read["acc"]
+		wpm_weak = 1.0 if read["wpm"] < 80 else (0.5 if read["wpm"] < 120 else 0.0)
+		areas.append(AreaScore("reading", min(1.0, max(0.0, 0.6 * acc_weak + 0.4 * wpm_weak))))
+	add_ratio("memory", MemoryTestSession)
+	add_ratio("scenario", ScenarioTestSession)
 	return areas
 
 

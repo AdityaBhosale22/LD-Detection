@@ -1,30 +1,27 @@
 from django.contrib import admin
 from django.db import connection
 from django.http import JsonResponse
-from django.urls import path, include
-from django.shortcuts import render
+from django.urls import include, path
 
 
-def home(request):
-	return render(request, "home.html")
+def index(_request):
+	return JsonResponse({"name": "LD Detection API", "health": "/healthz/", "api": "/api/"})
 
 
 def healthz(_request):
-	"""Liveness check used by Docker HEALTHCHECK, CI smoke test and deploy script."""
+	"""Liveness check used by Docker HEALTHCHECK, CI, Render and the deploy script."""
 	with connection.cursor() as cursor:
 		cursor.execute("SELECT 1")
 	return JsonResponse({"status": "ok"})
 
 
 urlpatterns = [
-	path("", home, name="home"),
+	path("", index),
 	path("healthz/", healthz, name="healthz"),
 	path("admin/", admin.site.urls),
-	path("accounts/", include("accounts.urls")),
-	path("assessments/", include("assessments.urls")),
-	path("predictions/", include("predictions.urls")),
-	path("recommendations/", include("recommendations.urls")),
-	path("reports/", include("reports.urls")),
+	path("api/auth/", include("accounts.urls")),
+	path("api/", include("assessments.urls")),
+	path("api/predictions/", include("predictions.urls")),
+	path("api/recommendations/", include("recommendations.urls")),
+	path("api/", include("reports.urls")),
 ]
-
-
