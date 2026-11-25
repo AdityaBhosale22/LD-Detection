@@ -25,3 +25,10 @@ ml/ld_model.joblib
 Thumbs.db
 .DS_Store
 
+
+# Logs
+*.log
+
+# Local test/coverage output
+.coverage
+htmlcov/

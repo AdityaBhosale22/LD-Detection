@@ -17,8 +17,10 @@ def main() -> None:
 		"attention_high",
 	]
 
-	# Create synthetic training data
+	# Create synthetic training data (fixed seed so every Docker build produces the same model).
+	# This is a placeholder baseline, not a clinically validated model.
 	# Intuition: reading difficulties and low attention increase LD risk; age, gender neutral here
+	np.random.seed(42)
 	n_samples = 1000
 	age = np.random.randint(6, 19, size=(n_samples, 1)).astype(float)
 	gender_idx = np.random.randint(0, 3, size=n_samples)

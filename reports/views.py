@@ -1,9 +1,9 @@
 from io import BytesIO
-from datetime import datetime
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
 from django.shortcuts import render
+from django.utils import timezone
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -21,6 +21,7 @@ from assessments.models import (
 from predictions.models import PredictionResult
 from recommendations.models import Recommendation
 from recommendations.services import compute_user_area_scores
+from .storage import upload_report
 
 # Matplotlib (non-interactive backend)
 import matplotlib
@@ -37,7 +38,7 @@ def download_report(request):
 
 	# Header
 	story.append(Paragraph("LD Detection - Student Report", styles["Title"]))
-	story.append(Paragraph(datetime.utcnow().strftime("Generated on %Y-%m-%d %H:%M UTC"), styles["Normal"]))
+	story.append(Paragraph(timezone.now().strftime("Generated on %Y-%m-%d %H:%M UTC"), styles["Normal"]))
 	story.append(Spacer(1, 12))
 
 	# User info
@@ -151,6 +152,7 @@ def download_report(request):
 	doc.build(story)
 	pdf = buffer.getvalue()
 	buffer.close()
+	upload_report(pdf, request.user.pk)
 	resp = HttpResponse(pdf, content_type="application/pdf")
 	resp["Content-Disposition"] = "attachment; filename=ld_report.pdf"
 	return resp

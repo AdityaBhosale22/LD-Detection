@@ -1,0 +1,6 @@
+# Keep Linux-executed files with LF endings, even on Windows checkouts
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+Jenkinsfile text eol=lf
+*.yml       text eol=lf
+*.yaml      text eol=lf
