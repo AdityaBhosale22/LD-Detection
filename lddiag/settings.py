@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+	"lddiag.middleware.HealthCheckMiddleware",
 	"django.middleware.security.SecurityMiddleware",
 	"whitenoise.middleware.WhiteNoiseMiddleware",
 	"corsheaders.middleware.CorsMiddleware",

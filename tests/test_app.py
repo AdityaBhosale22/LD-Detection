@@ -25,6 +25,13 @@ class HealthTests(TestCase):
 		self.assertEqual(resp.status_code, 200)
 		self.assertEqual(resp.json(), {"status": "ok"})
 
+	@override_settings(ALLOWED_HOSTS=["example.onrender.com"])
+	def test_healthz_works_for_unknown_host(self):
+		# Platform health checkers may use an internal hostname or IP
+		resp = self.client.get("/healthz/", HTTP_HOST="10.0.0.5:10000")
+		self.assertEqual(resp.status_code, 200)
+		self.assertEqual(self.client.get("/", HTTP_HOST="10.0.0.5:10000").status_code, 400)
+
 
 class AuthTests(TestCase):
 	def setUp(self):
